@@ -1,0 +1,2217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>单词迷宫游戏 - 趣味英语学习</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+        }
+
+        /* 游戏容器 */
+        .game-container {
+            width: 100%;
+            max-width: 390px;
+            height: 100vh;
+            max-height: 844px;
+            background: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(0,0,0,0.3);
+        }
+
+        /* 页面基础样式 */
+        .screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .screen.active {
+            display: flex;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3); }
+            50% { box-shadow: 0 4px 25px rgba(78, 205, 196, 0.5); }
+        }
+
+        @keyframes moveGrid {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(20px, 20px); }
+        }
+
+        @keyframes twinkle {
+            0%, 100% {
+                opacity: 0.5;
+                transform: scale(1) rotate(0deg);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.3) rotate(180deg);
+            }
+        }
+
+        @keyframes playerBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
+        @keyframes wordFloat {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-2px) scale(1.05); }
+        }
+
+        @keyframes wallBreak {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.5; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        @keyframes collectWord {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        /* 按钮通用样式 */
+        .btn {
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            touch-action: manipulation;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #FF6B6B, #4ECDC4);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            position: relative;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #FF5252, #40C4C0);
+            box-shadow: 0 6px 30px rgba(255, 107, 107, 0.5);
+            transform: translateY(-3px) scale(1.05);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #5a67d8, #6b3aa0);
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.5);
+            transform: translateY(-3px) scale(1.02);
+        }
+
+        .btn-green {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 15px rgba(17, 153, 142, 0.3);
+        }
+
+        .btn-green:hover {
+            box-shadow: 0 6px 25px rgba(17, 153, 142, 0.5);
+            transform: translateY(-3px) scale(1.02);
+        }
+
+        /* ============ 首页样式 ============ */
+        #homeScreen {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #homeScreen::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            animation: moveGrid 20s linear infinite;
+            pointer-events: none;
+        }
+
+        .home-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 25px 20px 10px 20px;
+            animation: fadeIn 0.5s ease-out;
+            position: relative;
+            z-index: 1;
+            overflow-y: auto;
+        }
+
+        .logo-area {
+            text-align: center;
+            margin: 10px 0;
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        .maze-logo {
+            font-size: 80px;
+            margin-bottom: 10px;
+            animation: pulse 2s ease-in-out infinite;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+        }
+
+        .game-title {
+            font-size: 32px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #FFD700, #FFA500, #FF6347);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 10px 0 15px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .game-subtitle {
+            font-size: 14px;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 20px;
+        }
+
+        .select-group {
+            margin-top: 12px;
+            animation: slideInUp 0.7s ease-out;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .select-label {
+            color: rgba(255,255,255,0.9);
+            font-size: 14px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .select-box {
+            width: 100%;
+            padding: 15px 20px;
+            border: 3px solid transparent;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.95);
+            background-image: linear-gradient(white, white),
+                              linear-gradient(45deg, #667eea, #764ba2);
+            background-origin: border-box;
+            background-clip: padding-box, border-box;
+            color: #333;
+            appearance: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+
+        .select-box:focus {
+            outline: none;
+            transform: scale(1.02);
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .button-group {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            animation: slideInUp 0.8s ease-out;
+        }
+
+        .button-group .btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 17px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .home-footer {
+            margin-top: auto;
+            padding: 15px 0;
+            text-align: center;
+        }
+
+        .publisher-info {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.15);
+            font-size: 12px;
+        }
+
+        .publisher-text {
+            font-size: 12px;
+            color: rgba(255,255,255,0.9);
+            font-weight: 500;
+        }
+
+        .star-icon {
+            font-size: 14px;
+            animation: twinkle 2s ease-in-out infinite;
+        }
+
+        .star-icon:nth-child(3) {
+            animation-delay: 1s;
+        }
+
+        /* ============ 游戏页面样式 ============ */
+        #gameScreen {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        /* 顶部导航栏 */
+        .navbar {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:active {
+            transform: scale(0.9);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .timer {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .timer.warning {
+            background: rgba(255, 87, 87, 0.5);
+            animation: pulse 0.5s ease-in-out infinite;
+        }
+
+        /* 游戏信息栏 */
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .info-icon {
+            font-size: 18px;
+        }
+
+        .info-value {
+            font-weight: bold;
+            color: #4ECDC4;
+        }
+
+        /* 迷宫容器 */
+        .maze-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .maze-grid {
+            display: grid;
+            gap: 2px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .maze-cell {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .maze-cell.wall {
+            background: linear-gradient(135deg, #4a4a6a, #2d2d44);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .maze-cell.path {
+            background: linear-gradient(135deg, #2d3a4f, #1e2738);
+        }
+
+        .maze-cell.start {
+            background: linear-gradient(135deg, #4CAF50, #8BC34A);
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+
+        .maze-cell.end {
+            background: linear-gradient(135deg, #FF5722, #FF9800);
+            box-shadow: 0 0 10px rgba(255, 87, 34, 0.5);
+        }
+
+        .maze-cell.end::after {
+            content: '🚪';
+            font-size: 20px;
+        }
+
+        .maze-cell.breakable {
+            background: linear-gradient(135deg, #9C27B0, #673AB7);
+            box-shadow: 0 0 8px rgba(156, 39, 176, 0.4);
+        }
+
+        .maze-cell.breaking {
+            animation: wallBreak 0.5s forwards;
+        }
+
+        /* 玩家角色 */
+        .player {
+            position: absolute;
+            font-size: 24px;
+            z-index: 100;
+            transition: all 0.15s ease-out;
+            animation: playerBounce 1s ease-in-out infinite;
+            filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
+            cursor: grab;
+        }
+
+        .player:active {
+            cursor: grabbing;
+            animation: none;
+            transform: scale(1.2);
+        }
+
+        /* 单词道具 */
+        .word-item {
+            position: absolute;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.5);
+            animation: wordFloat 2s ease-in-out infinite;
+            z-index: 50;
+            white-space: nowrap;
+        }
+
+        .word-item.collecting {
+            animation: collectWord 0.3s forwards;
+        }
+
+        /* 单词提示弹窗 */
+        .word-popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            z-index: 1000;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: scaleIn 0.3s ease-out;
+            max-width: 300px;
+            width: 90%;
+        }
+
+        .word-popup.active {
+            display: block;
+        }
+
+        .popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+        }
+
+        .popup-overlay.active {
+            display: block;
+        }
+
+        .popup-word {
+            font-size: 36px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .popup-chinese {
+            font-size: 24px;
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+
+        .popup-example {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .popup-effect {
+            background: linear-gradient(135deg, #9C27B0, #673AB7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        /* 底部提示 */
+        .game-hint {
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+        }
+
+        /* ============ 游戏结束页面 ============ */
+        #gameOverScreen {
+            background: linear-gradient(to bottom, #E3F2FD, #BBDEFB);
+        }
+
+        #gameOverScreen.victory {
+            background: linear-gradient(to bottom, #E8F5E9, #C8E6C9);
+        }
+
+        #gameOverScreen.defeat {
+            background: linear-gradient(to bottom, #FFEBEE, #FFCDD2);
+        }
+
+        .game-over-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .result-header {
+            text-align: center;
+            margin-bottom: 20px;
+            animation: scaleIn 0.6s ease-out;
+        }
+
+        .result-icons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 10px;
+            font-size: 50px;
+        }
+
+        .result-title {
+            font-size: 24px;
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .result-subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+            animation: slideInUp 0.7s ease-out;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* 单词回顾区域 */
+        .word-review-section {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 100px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            animation: slideInUp 0.8s ease-out;
+        }
+
+        .review-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 15px 0 10px 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        .section-title.correct {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4CAF50;
+        }
+
+        .section-title.wrong {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+        }
+
+        .word-review-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .review-word-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .review-word-item:hover {
+            transform: scale(1.02);
+        }
+
+        .review-word-item.correct {
+            background: rgba(76, 175, 80, 0.1);
+            border-left: 4px solid #4CAF50;
+        }
+
+        .review-word-item.wrong {
+            background: rgba(244, 67, 54, 0.15);
+            border-left: 4px solid #f44336;
+        }
+
+        .word-en {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .word-cn {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .word-speak-btn {
+            font-size: 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .word-speak-btn:hover {
+            transform: scale(1.2);
+        }
+
+        /* 底部按钮 */
+        .game-over-buttons {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 40px);
+            max-width: 350px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .game-over-buttons .btn {
+            flex: 1;
+            padding: 14px;
+            font-size: 15px;
+        }
+
+        /* 品牌署名 */
+        .brand-signature {
+            text-align: center;
+            padding: 15px;
+            color: rgba(102, 126, 234, 0.8);
+            font-size: 12px;
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+        }
+
+        /* 暂停弹窗 */
+        .pause-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .pause-modal.active {
+            display: flex;
+        }
+
+        .pause-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            animation: scaleIn 0.3s ease-out;
+            max-width: 300px;
+            width: 90%;
+        }
+
+        .pause-title {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .pause-subtitle {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .pause-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* 游戏说明弹窗 */
+        .help-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .help-modal.active {
+            display: flex;
+            animation: fadeIn 0.3s;
+        }
+
+        .help-content {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            max-width: 350px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: scaleIn 0.3s;
+        }
+
+        .help-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .help-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .close-help {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #f5f5f5;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .close-help:hover {
+            background: #FF5252;
+            color: white;
+            transform: rotate(90deg);
+        }
+
+        .help-section {
+            margin-bottom: 20px;
+        }
+
+        .help-section h3 {
+            font-size: 16px;
+            color: #667eea;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .help-section p {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .help-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .help-list li {
+            font-size: 13px;
+            color: #666;
+            padding: 5px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .help-list li:before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: #4CAF50;
+        }
+
+        /* Toast提示 */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            font-size: 14px;
+            z-index: 10001;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            text-align: center;
+            max-width: 280px;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* 响应式适配 */
+        @media (max-height: 700px) {
+            .maze-logo {
+                font-size: 60px;
+            }
+
+            .game-title {
+                font-size: 26px;
+            }
+
+            .button-group .btn {
+                padding: 12px;
+                font-size: 15px;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .game-container {
+                border-radius: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- ============ 首页 ============ -->
+        <div id="homeScreen" class="screen active">
+            <div class="home-content">
+                <div class="logo-area">
+                    <div class="maze-logo">🧩</div>
+                    <h1 class="game-title">单词迷宫</h1>
+                    <p class="game-subtitle">拖动小人穿越迷宫，收集单词开辟捷径！</p>
+                </div>
+
+                <div class="select-group">
+                    <div class="select-label">📚 选择年级</div>
+                    <select id="gradeSelect" class="select-box">
+                        <option value="1">1年级 - 基础词汇</option>
+                        <option value="2">2年级 - 进阶词汇</option>
+                        <option value="3">3年级 - 中级词汇</option>
+                        <option value="4">4年级 - 高级词汇</option>
+                        <option value="5">5年级 - 挑战词汇</option>
+                        <option value="6">6年级 - 精英词汇</option>
+                    </select>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="startGame()">🚀 开始游戏</button>
+                    <button class="btn btn-secondary" onclick="showHelp()">📖 游戏说明</button>
+                </div>
+
+                <div class="home-footer">
+                    <div class="publisher-info">
+                        <span class="star-icon">⭐</span>
+                        <span class="publisher-text">制作by公众号:泡泡妈学AI</span>
+                        <span class="star-icon">⭐</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ 游戏页面 ============ -->
+        <div id="gameScreen" class="screen">
+            <!-- 导航栏 -->
+            <div class="navbar">
+                <button class="icon-btn" id="backBtn" onclick="showPauseMenu()">🔙</button>
+                <button class="icon-btn" id="pauseBtn" onclick="togglePause()">⏸️</button>
+                <button class="icon-btn" id="refreshBtn" onclick="restartGame()">🔄</button>
+                <div class="timer" id="timerDisplay">⏱️ <span id="timeDisplay">01:00</span></div>
+                <button class="icon-btn" id="volumeBtn" onclick="toggleSound()">🔊</button>
+                <button class="icon-btn" id="helpBtn" onclick="showHelp()">❓</button>
+            </div>
+
+            <!-- 游戏信息 -->
+            <div class="game-info">
+                <div class="info-item">
+                    <span class="info-icon">📝</span>
+                    <span>单词: </span>
+                    <span class="info-value" id="wordCount">0/5</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-icon">🧱</span>
+                    <span>可破墙: </span>
+                    <span class="info-value" id="breakCount">0</span>
+                </div>
+            </div>
+
+            <!-- 迷宫区域 -->
+            <div class="maze-container">
+                <div class="maze-grid" id="mazeGrid">
+                    <!-- 迷宫格子动态生成 -->
+                </div>
+            </div>
+
+            <!-- 底部提示 -->
+            <div class="game-hint">
+                💡 拖动小人移动，收集单词可以破除一堵墙
+            </div>
+        </div>
+
+        <!-- ============ 游戏结束页面 ============ -->
+        <div id="gameOverScreen" class="screen">
+            <div class="game-over-content">
+                <div class="result-header">
+                    <div class="result-icons" id="resultIcons">🎉🏆🎉</div>
+                    <h2 class="result-title" id="resultTitle">恭喜通关！</h2>
+                    <p class="result-subtitle" id="resultSubtitle">你成功走出了迷宫</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">⏱️</div>
+                        <div class="stat-value" id="statTime">00:45</div>
+                        <div class="stat-label">用时</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📝</div>
+                        <div class="stat-value" id="statWords">5</div>
+                        <div class="stat-label">收集单词</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🧱</div>
+                        <div class="stat-value" id="statWalls">3</div>
+                        <div class="stat-label">破除墙壁</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-value" id="statScore">100</div>
+                        <div class="stat-label">得分</div>
+                    </div>
+                </div>
+
+                <!-- 单词回顾 -->
+                <div class="word-review-section">
+                    <h3 class="review-title">📖 本局单词回顾</h3>
+
+                    <h4 class="section-title correct" id="correctTitle">✅ 收集的单词 (0个)</h4>
+                    <div class="word-review-list" id="correctWordsList">
+                        <!-- 动态生成 -->
+                    </div>
+
+                    <h4 class="section-title wrong" id="missedTitle">❌ 错过的单词 (0个)</h4>
+                    <div class="word-review-list" id="missedWordsList">
+                        <!-- 动态生成 -->
+                    </div>
+                </div>
+
+                <div class="brand-signature">
+                    ⭐ 制作by公众号:泡泡妈学AI ⭐
+                </div>
+            </div>
+
+            <div class="game-over-buttons">
+                <button class="btn btn-primary" onclick="restartGame()">🔄 再玩一次</button>
+                <button class="btn btn-secondary" onclick="goHome()">🏠 返回首页</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 暂停弹窗（仅用于返回首页确认） -->
+    <div class="pause-modal" id="pauseModal">
+        <div class="pause-content">
+            <div class="pause-title">⏸️ 游戏暂停</div>
+            <p class="pause-subtitle">休息一下，准备好再继续！</p>
+            <div class="pause-buttons">
+                <button class="btn btn-primary" onclick="closePauseMenu()">▶️ 继续游戏</button>
+                <button class="btn btn-green" onclick="restartGame()">🔄 重新开始</button>
+                <button class="btn btn-secondary" onclick="goHome()">🏠 返回首页</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 单词弹窗 -->
+    <div class="popup-overlay" id="wordOverlay"></div>
+    <div class="word-popup" id="wordPopup">
+        <div class="popup-word" id="popupWord">Apple</div>
+        <div class="popup-chinese" id="popupChinese">苹果</div>
+        <div class="popup-example" id="popupExample">The apple is red. 苹果是红色的。</div>
+        <div class="popup-effect">🧱 可以破除一堵墙！</div>
+        <button class="btn btn-primary" onclick="closeWordPopup()">继续探索</button>
+    </div>
+
+    <!-- 游戏说明弹窗 -->
+    <div class="help-modal" id="helpModal">
+        <div class="help-content">
+            <div class="help-header">
+                <span class="help-title">📖 游戏说明</span>
+                <button class="close-help" onclick="closeHelp()">×</button>
+            </div>
+
+            <div class="help-section">
+                <h3>🎯 游戏目标</h3>
+                <p>在1分钟内，拖动小人从起点🟢走到出口🚪，成功逃离迷宫！</p>
+            </div>
+
+            <div class="help-section">
+                <h3>🎮 操作方式</h3>
+                <ul class="help-list">
+                    <li>手指按住小人👦，拖动到相邻的通道格子</li>
+                    <li>只能走通道，不能穿墙</li>
+                    <li>松手后小人会停在当前位置</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>📝 单词收集</h3>
+                <ul class="help-list">
+                    <li>迷宫中有5个单词，触碰即可收集</li>
+                    <li>收集单词会弹出中文释义和朗读</li>
+                    <li>每收集1个单词，可以破除1堵紫色的墙</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>🧱 破墙技巧</h3>
+                <ul class="help-list">
+                    <li>紫色墙壁可以被破除</li>
+                    <li>收集单词后，点击紫色墙壁即可破除</li>
+                    <li>合理破墙可以开辟捷径，更快到达出口</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>⏱️ 时间限制</h3>
+                <p>游戏限时1分钟，倒计时结束前必须到达出口，否则挑战失败！</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast提示 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ============ 单词数据库 ============
+        const wordDatabase = {
+            1: [
+                { word: 'Cat', chinese: '猫', pronunciation: '/kæt/', example: 'The cat is sleeping. 猫在睡觉。' },
+                { word: 'Dog', chinese: '狗', pronunciation: '/dɒɡ/', example: 'My dog is friendly. 我的狗很友好。' },
+                { word: 'Bird', chinese: '鸟', pronunciation: '/bɜːrd/', example: 'Birds can fly. 鸟会飞。' },
+                { word: 'Fish', chinese: '鱼', pronunciation: '/fɪʃ/', example: 'Fish live in water. 鱼生活在水里。' },
+                { word: 'Rabbit', chinese: '兔子', pronunciation: '/ˈræbɪt/', example: 'The rabbit is white. 兔子是白色的。' },
+                { word: 'Duck', chinese: '鸭子', pronunciation: '/dʌk/', example: 'Ducks swim in the pond. 鸭子在池塘里游泳。' },
+                { word: 'Pig', chinese: '猪', pronunciation: '/pɪɡ/', example: 'The pig is pink. 猪是粉色的。' },
+                { word: 'Cow', chinese: '牛', pronunciation: '/kaʊ/', example: 'Cows give us milk. 牛给我们牛奶。' },
+                { word: 'Horse', chinese: '马', pronunciation: '/hɔːrs/', example: 'The horse runs fast. 马跑得很快。' },
+                { word: 'Apple', chinese: '苹果', pronunciation: '/ˈæpəl/', example: 'The apple is sweet. 苹果很甜。' },
+                { word: 'Banana', chinese: '香蕉', pronunciation: '/bəˈnænə/', example: 'Monkeys like bananas. 猴子喜欢香蕉。' },
+                { word: 'Red', chinese: '红色', pronunciation: '/red/', example: 'The apple is red. 苹果是红色的。' },
+                { word: 'Blue', chinese: '蓝色', pronunciation: '/bluː/', example: 'The sky is blue. 天空是蓝色的。' },
+                { word: 'Green', chinese: '绿色', pronunciation: '/ɡriːn/', example: 'Grass is green. 草是绿色的。' },
+                { word: 'Yellow', chinese: '黄色', pronunciation: '/ˈjeləʊ/', example: 'The sun is yellow. 太阳是黄色的。' },
+                { word: 'Book', chinese: '书', pronunciation: '/bʊk/', example: 'I read a book. 我读一本书。' },
+                { word: 'Pen', chinese: '钢笔', pronunciation: '/pen/', example: 'Write with a pen. 用钢笔写字。' },
+                { word: 'Ball', chinese: '球', pronunciation: '/bɔːl/', example: 'Throw the ball. 扔球。' },
+                { word: 'Sun', chinese: '太阳', pronunciation: '/sʌn/', example: 'The sun is bright. 太阳很亮。' },
+                { word: 'Moon', chinese: '月亮', pronunciation: '/muːn/', example: 'The moon is round. 月亮是圆的。' }
+            ],
+            2: [
+                { word: 'School', chinese: '学校', pronunciation: '/skuːl/', example: 'I go to school every day. 我每天都去学校。' },
+                { word: 'Teacher', chinese: '老师', pronunciation: '/ˈtiːtʃər/', example: 'My teacher is kind. 我的老师很友善。' },
+                { word: 'Student', chinese: '学生', pronunciation: '/ˈstuːdənt/', example: 'I am a good student. 我是一个好学生。' },
+                { word: 'Homework', chinese: '作业', pronunciation: '/ˈhoʊmwɜːrk/', example: 'Do your homework first. 先做你的作业。' },
+                { word: 'Pencil', chinese: '铅笔', pronunciation: '/ˈpensəl/', example: 'Draw with a pencil. 用铅笔画画。' },
+                { word: 'Eraser', chinese: '橡皮擦', pronunciation: '/ɪˈreɪsər/', example: 'The eraser removes pencil marks. 橡皮擦能擦掉铅笔印。' },
+                { word: 'Table', chinese: '桌子', pronunciation: '/ˈteɪbəl/', example: 'The book is on the table. 书在桌子上。' },
+                { word: 'Chair', chinese: '椅子', pronunciation: '/tʃer/', example: 'Sit on the chair. 坐在椅子上。' },
+                { word: 'Window', chinese: '窗户', pronunciation: '/ˈwɪndəʊ/', example: 'Open the window. 打开窗户。' },
+                { word: 'Door', chinese: '门', pronunciation: '/dɔːr/', example: 'Close the door. 关门。' },
+                { word: 'Mother', chinese: '母亲', pronunciation: '/ˈmʌðər/', example: 'My mother loves me. 我妈妈爱我。' },
+                { word: 'Father', chinese: '父亲', pronunciation: '/ˈfɑːðər/', example: 'Father is working. 爸爸在工作。' },
+                { word: 'Sister', chinese: '姐妹', pronunciation: '/ˈsɪstər/', example: 'My sister is tall. 我姐姐很高。' },
+                { word: 'Brother', chinese: '兄弟', pronunciation: '/ˈbrʌðər/', example: 'My brother plays soccer. 我哥哥踢足球。' },
+                { word: 'Friend', chinese: '朋友', pronunciation: '/frend/', example: 'You are my best friend. 你是我最好的朋友。' },
+                { word: 'Happy', chinese: '快乐的', pronunciation: '/ˈhæpi/', example: 'I am happy today. 我今天很快乐。' },
+                { word: 'Sad', chinese: '悲伤的', pronunciation: '/sæd/', example: "Don't be sad. 不要悲伤。" },
+                { word: 'Weather', chinese: '天气', pronunciation: '/ˈweðər/', example: 'How is the weather today? 今天天气怎么样？' },
+                { word: 'Sunny', chinese: '晴朗的', pronunciation: '/ˈsʌni/', example: 'Today is sunny. 今天天气晴朗。' },
+                { word: 'Rainy', chinese: '下雨的', pronunciation: '/ˈreɪni/', example: 'Take an umbrella on rainy days. 雨天要带伞。' }
+            ],
+            3: [
+                { word: 'Geography', chinese: '地理', pronunciation: '/dʒiˈɑːɡrəfi/', example: 'Geography teaches us about the world. 地理教我们了解世界。' },
+                { word: 'History', chinese: '历史', pronunciation: '/ˈhɪstəri/', example: 'History tells us about the past. 历史告诉我们过去的事情。' },
+                { word: 'Science', chinese: '科学', pronunciation: '/ˈsaɪəns/', example: 'Science is interesting. 科学很有趣。' },
+                { word: 'Library', chinese: '图书馆', pronunciation: '/ˈlaɪbreri/', example: 'Books are in the library. 书在图书馆里。' },
+                { word: 'Museum', chinese: '博物馆', pronunciation: '/mjuˈziːəm/', example: 'We visited the museum. 我们参观了博物馆。' },
+                { word: 'Hospital', chinese: '医院', pronunciation: '/ˈhɒspɪtl/', example: 'Doctors work in the hospital. 医生在医院工作。' },
+                { word: 'Restaurant', chinese: '餐厅', pronunciation: '/ˈrestrɒnt/', example: 'We eat at the restaurant. 我们在餐厅吃饭。' },
+                { word: 'Airport', chinese: '机场', pronunciation: '/ˈerpɔːrt/', example: 'Planes take off from the airport. 飞机从机场起飞。' },
+                { word: 'Mountain', chinese: '山', pronunciation: '/ˈmaʊntən/', example: 'Mountains are high. 山很高。' },
+                { word: 'Ocean', chinese: '海洋', pronunciation: '/ˈəʊʃn/', example: 'The ocean is blue and deep. 海洋是蓝色且深邃的。' },
+                { word: 'Island', chinese: '岛屿', pronunciation: '/ˈaɪlənd/', example: 'The island is beautiful. 这个岛屿很美丽。' },
+                { word: 'Desert', chinese: '沙漠', pronunciation: '/ˈdezət/', example: 'The desert is hot and dry. 沙漠又热又干。' },
+                { word: 'Forest', chinese: '森林', pronunciation: '/ˈfɒrɪst/', example: 'Animals live in the forest. 动物生活在森林里。' },
+                { word: 'Jungle', chinese: '丛林', pronunciation: '/ˈdʒʌŋɡl/', example: 'The jungle is full of trees. 丛林里到处都是树。' },
+                { word: 'Planet', chinese: '行星', pronunciation: '/ˈplænɪt/', example: 'Earth is a planet. 地球是一颗行星。' },
+                { word: 'Universe', chinese: '宇宙', pronunciation: '/ˈjuːnɪvɜːrs/', example: 'The universe is vast. 宇宙是广阔的。' },
+                { word: 'Adventure', chinese: '冒险', pronunciation: '/ədˈventʃər/', example: 'I love adventure. 我喜欢冒险。' },
+                { word: 'Journey', chinese: '旅程', pronunciation: '/ˈdʒɜːrni/', example: 'Life is a journey. 生活是一段旅程。' },
+                { word: 'Discovery', chinese: '发现', pronunciation: '/dɪˈskʌvəri/', example: 'Scientists make discoveries. 科学家们做出发现。' },
+                { word: 'Explorer', chinese: '探险家', pronunciation: '/ɪkˈsplɔːrər/', example: 'The explorer found a new land. 探险家发现了新大陆。' }
+            ],
+            4: [
+                { word: 'Astronomy', chinese: '天文学', pronunciation: '/əˈstrɒnəmi/', example: 'Astronomy studies the stars. 天文学研究星星。' },
+                { word: 'Ecosystem', chinese: '生态系统', pronunciation: '/ˈiːkəʊsɪstəm/', example: 'The rainforest is an ecosystem. 雨林是一个生态系统。' },
+                { word: 'Atmosphere', chinese: '大气层', pronunciation: '/ˈætməsfɪər/', example: 'The atmosphere protects the Earth. 大气层保护地球。' },
+                { word: 'Continent', chinese: '大陆', pronunciation: '/ˈkɒntɪnənt/', example: 'Asia is the largest continent. 亚洲是最大的大陆。' },
+                { word: 'Population', chinese: '人口', pronunciation: '/ˌpɒpjuˈleɪʃn/', example: 'The population is growing. 人口在增长。' },
+                { word: 'Government', chinese: '政府', pronunciation: '/ˈɡʌvənmənt/', example: 'The government makes laws. 政府制定法律。' },
+                { word: 'Democracy', chinese: '民主', pronunciation: '/dɪˈmɒkrəsi/', example: 'Democracy means people rule. 民主意味着人民统治。' },
+                { word: 'Technology', chinese: '技术', pronunciation: '/tekˈnɒlədʒi/', example: 'Technology changes our lives. 技术改变我们的生活。' },
+                { word: 'Innovation', chinese: '创新', pronunciation: '/ˌɪnəˈveɪʃn/', example: 'Innovation drives progress. 创新推动进步。' },
+                { word: 'Experiment', chinese: '实验', pronunciation: '/ɪkˈsperɪmənt/', example: 'Scientists do experiments. 科学家做实验。' },
+                { word: 'Laboratory', chinese: '实验室', pronunciation: '/ləˈbɒrətri/', example: 'Research happens in the laboratory. 研究在实验室进行。' },
+                { word: 'Electricity', chinese: '电', pronunciation: '/ɪˌlekˈtrɪsəti/', example: 'Electricity powers our homes. 电力为我们的家供电。' },
+                { word: 'Telescope', chinese: '望远镜', pronunciation: '/ˈtelɪskəʊp/', example: 'We use a telescope to see stars. 我们用望远镜看星星。' },
+                { word: 'Microscope', chinese: '显微镜', pronunciation: '/ˈmaɪkrəskəʊp/', example: 'A microscope shows tiny things. 显微镜显示微小的东西。' },
+                { word: 'Chemical', chinese: '化学的', pronunciation: '/ˈkemɪkl/', example: 'Chemical reactions create energy. 化学反应产生能量。' },
+                { word: 'Particle', chinese: '粒子', pronunciation: '/ˈpɑːtɪkl/', example: 'Atoms are tiny particles. 原子是微小的粒子。' },
+                { word: 'Molecule', chinese: '分子', pronunciation: '/ˈmɒlɪkjuːl/', example: 'Water is made of molecules. 水由分子组成。' },
+                { word: 'Evolution', chinese: '进化', pronunciation: '/ˌiːvəˈluːʃn/', example: 'Evolution takes millions of years. 进化需要数百万年。' },
+                { word: 'Civilization', chinese: '文明', pronunciation: '/ˌsɪvəlaɪˈzeɪʃn/', example: 'Ancient civilizations built pyramids. 古代文明建造了金字塔。' },
+                { word: 'Architecture', chinese: '建筑学', pronunciation: '/ˈɑːkɪtektʃər/', example: 'Architecture is the art of building. 建筑学是建筑的艺术。' }
+            ],
+            5: [
+                { word: 'Phenomenon', chinese: '现象', pronunciation: '/fəˈnɒmɪnən/', example: 'A rainbow is a natural phenomenon. 彩虹是一种自然现象。' },
+                { word: 'Hypothesis', chinese: '假设', pronunciation: '/haɪˈpɒθəsɪs/', example: 'Scientists test their hypothesis. 科学家测试他们的假设。' },
+                { word: 'Environment', chinese: '环境', pronunciation: '/ɪnˈvaɪrənmənt/', example: 'Protect the environment. 保护环境。' },
+                { word: 'Sustainable', chinese: '可持续的', pronunciation: '/səˈsteɪnəbl/', example: 'We need sustainable energy. 我们需要可持续能源。' },
+                { word: 'Biodiversity', chinese: '生物多样性', pronunciation: '/ˌbaɪəʊdaɪˈvɜːsəti/', example: 'Biodiversity is important for life. 生物多样性对生命很重要。' },
+                { word: 'Conservation', chinese: '保护', pronunciation: '/ˌkɒnsəˈveɪʃn/', example: 'Conservation saves wildlife. 保护拯救野生动物。' },
+                { word: 'Photosynthesis', chinese: '光合作用', pronunciation: '/ˌfəʊtəʊˈsɪnθəsɪs/', example: 'Plants use photosynthesis. 植物使用光合作用。' },
+                { word: 'Metamorphosis', chinese: '变态', pronunciation: '/ˌmetəˈmɔːfəsɪs/', example: 'Butterflies go through metamorphosis. 蝴蝶经历变态。' },
+                { word: 'Archaeology', chinese: '考古学', pronunciation: '/ˌɑːkiˈɒlədʒi/', example: 'Archaeology studies ancient cultures. 考古学研究古代文化。' },
+                { word: 'Philosophy', chinese: '哲学', pronunciation: '/fəˈlɒsəfi/', example: 'Philosophy asks big questions. 哲学提出重大问题。' },
+                { word: 'Psychology', chinese: '心理学', pronunciation: '/saɪˈkɒlədʒi/', example: 'Psychology studies the mind. 心理学研究心理。' },
+                { word: 'Anthropology', chinese: '人类学', pronunciation: '/ˌænθrəˈpɒlədʒi/', example: 'Anthropology studies human culture. 人类学研究人类文化。' },
+                { word: 'Economics', chinese: '经济学', pronunciation: '/ˌiːkəˈnɒmɪks/', example: 'Economics studies money and trade. 经济学研究货币和贸易。' },
+                { word: 'Entrepreneurship', chinese: '创业', pronunciation: '/ˌɒntrəprəˈnɜːʃɪp/', example: 'Entrepreneurship creates new businesses. 创业创造新企业。' },
+                { word: 'Communication', chinese: '交流', pronunciation: '/kəˌmjuːnɪˈkeɪʃn/', example: 'Communication is key to success. 交流是成功的关键。' },
+                { word: 'Collaboration', chinese: '合作', pronunciation: '/kəˌlæbəˈreɪʃn/', example: 'Teamwork requires collaboration. 团队合作需要协作。' },
+                { word: 'Perspective', chinese: '视角', pronunciation: '/pəˈspektɪv/', example: 'Everyone has a different perspective. 每个人都有不同的视角。' },
+                { word: 'Consciousness', chinese: '意识', pronunciation: '/ˈkɒnʃəsnəs/', example: 'Consciousness is still a mystery. 意识仍然是一个谜。' },
+                { word: 'Artificial', chinese: '人工的', pronunciation: '/ˌɑːtɪˈfɪʃl/', example: 'Artificial intelligence is advancing. 人工智能正在进步。' },
+                { word: 'Extraordinary', chinese: '非凡的', pronunciation: '/ɪkˈstrɔːdnri/', example: 'She has extraordinary talent. 她有非凡的才能。' }
+            ],
+            6: [
+                { word: 'Philosophical', chinese: '哲学的', pronunciation: '/ˌfɪləˈsɒfɪkl/', example: 'This is a philosophical question. 这是一个哲学问题。' },
+                { word: 'Revolutionary', chinese: '革命性的', pronunciation: '/ˌrevəˈluːʃənri/', example: 'This is a revolutionary idea. 这是一个革命性的想法。' },
+                { word: 'Sophisticated', chinese: '复杂的', pronunciation: '/səˈfɪstɪkeɪtɪd/', example: 'The technology is sophisticated. 这项技术很复杂。' },
+                { word: 'Controversial', chinese: '有争议的', pronunciation: '/ˌkɒntrəˈvɜːʃl/', example: 'The topic is controversial. 这个话题有争议。' },
+                { word: 'Comprehensive', chinese: '综合的', pronunciation: '/ˌkɒmprɪˈhensɪv/', example: 'This is a comprehensive study. 这是一项综合研究。' },
+                { word: 'Fundamental', chinese: '基本的', pronunciation: '/ˌfʌndəˈmentl/', example: 'This is a fundamental principle. 这是一个基本原则。' },
+                { word: 'Significance', chinese: '重要性', pronunciation: '/sɪɡˈnɪfɪkəns/', example: 'The event has great significance. 这一事件具有重大意义。' },
+                { word: 'Consequently', chinese: '因此', pronunciation: '/ˈkɒnsɪkwəntli/', example: 'Consequently, we must act now. 因此，我们必须现在行动。' },
+                { word: 'Nevertheless', chinese: '然而', pronunciation: '/ˌnevəðəˈles/', example: 'Nevertheless, we tried again. 然而，我们再次尝试。' },
+                { word: 'Furthermore', chinese: '此外', pronunciation: '/ˌfɜːðəˈmɔːr/', example: 'Furthermore, we need more data. 此外，我们需要更多数据。' },
+                { word: 'Simultaneously', chinese: '同时地', pronunciation: '/ˌsɪmlˈteɪniəsli/', example: 'They arrived simultaneously. 他们同时到达。' },
+                { word: 'Predominantly', chinese: '主要地', pronunciation: '/prɪˈdɒmɪnəntli/', example: 'The area is predominantly rural. 这个地区主要是农村。' },
+                { word: 'Approximately', chinese: '大约', pronunciation: '/əˈprɒksɪmətli/', example: 'It takes approximately one hour. 大约需要一个小时。' },
+                { word: 'Characteristic', chinese: '特征', pronunciation: '/ˌkærəktəˈrɪstɪk/', example: 'This is a key characteristic. 这是一个关键特征。' },
+                { word: 'Infrastructure', chinese: '基础设施', pronunciation: '/ˈɪnfrəstrʌktʃər/', example: 'The city needs better infrastructure. 这座城市需要更好的基础设施。' },
+                { word: 'Interpretation', chinese: '解释', pronunciation: '/ɪnˌtɜːprɪˈteɪʃn/', example: 'There are many interpretations. 有很多解释。' },
+                { word: 'Responsibility', chinese: '责任', pronunciation: '/rɪˌspɒnsəˈbɪləti/', example: 'Take responsibility for your actions. 为你的行为负责。' },
+                { word: 'Accomplishment', chinese: '成就', pronunciation: '/əˈkʌmplɪʃmənt/', example: 'This is a great accomplishment. 这是一项伟大的成就。' },
+                { word: 'Determination', chinese: '决心', pronunciation: '/dɪˌtɜːmɪˈneɪʃn/', example: 'Success requires determination. 成功需要决心。' },
+                { word: 'Perseverance', chinese: '坚持', pronunciation: '/ˌpɜːsɪˈvɪərəns/', example: 'Perseverance leads to success. 坚持导致成功。' }
+            ]
+        };
+
+        // ============ 游戏状态 ============
+        let gameState = {
+            currentGrade: 1,
+            maze: [],
+            playerPos: { row: 0, col: 0 },
+            endPos: { row: 14, col: 6 },
+            words: [],
+            collectedWords: [],
+            missedWords: [],
+            breakableWalls: [],
+            breakCount: 0,
+            wallsBroken: 0,
+            timeLeft: 60,
+            timer: null,
+            isPaused: false,
+            isGameOver: false,
+            soundEnabled: true,
+            isDragging: false,
+            startTime: null
+        };
+
+        const ROWS = 15;
+        const COLS = 7;
+        const WORD_COUNT = 5;
+
+        // ============ 页面切换 ============
+        function switchScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function goHome() {
+            stopGame();
+            switchScreen('homeScreen');
+        }
+
+        // ============ 游戏说明 ============
+        let wasPlaying = false;
+
+        function showHelp() {
+            // 如果正在游戏中，暂停游戏
+            if (document.getElementById('gameScreen').classList.contains('active') &&
+                !gameState.isPaused && !gameState.isGameOver) {
+                wasPlaying = true;
+                clearInterval(gameState.timer);
+            } else {
+                wasPlaying = false;
+            }
+            document.getElementById('helpModal').classList.add('active');
+        }
+
+        function closeHelp() {
+            document.getElementById('helpModal').classList.remove('active');
+            // 如果之前在游戏中，恢复计时
+            if (wasPlaying && !gameState.isPaused && !gameState.isGameOver) {
+                startTimer();
+            }
+        }
+
+        // ============ 暂停功能 ============
+        function togglePause() {
+            if (gameState.isGameOver) return;
+
+            gameState.isPaused = !gameState.isPaused;
+            const pauseBtn = document.getElementById('pauseBtn');
+
+            if (gameState.isPaused) {
+                // 暂停游戏 - 直接暂停，不弹窗
+                pauseBtn.textContent = '▶️';
+                clearInterval(gameState.timer);
+                // 停止TTS
+                speechSynthesis.cancel();
+            } else {
+                // 继续游戏
+                pauseBtn.textContent = '⏸️';
+                startTimer();
+            }
+        }
+
+        // 暂停菜单（从导航栏返回时使用）
+        function showPauseMenu() {
+            if (gameState.isGameOver) return;
+            gameState.isPaused = true;
+            clearInterval(gameState.timer);
+            document.getElementById('pauseBtn').textContent = '▶️';
+            document.getElementById('pauseModal').classList.add('active');
+        }
+
+        function closePauseMenu() {
+            document.getElementById('pauseModal').classList.remove('active');
+            gameState.isPaused = false;
+            document.getElementById('pauseBtn').textContent = '⏸️';
+            startTimer();
+        }
+
+        // ============ 音效控制 ============
+        function toggleSound() {
+            gameState.soundEnabled = !gameState.soundEnabled;
+            document.getElementById('volumeBtn').textContent = gameState.soundEnabled ? '🔊' : '🔇';
+        }
+
+        // ============ Toast提示 ============
+        function showToast(message, duration = 2000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+
+        // ============ 迷宫生成算法 (改进版) ============
+        function generateMaze() {
+            // 初始化迷宫，全部是墙
+            const maze = [];
+            for (let r = 0; r < ROWS; r++) {
+                maze[r] = [];
+                for (let c = 0; c < COLS; c++) {
+                    maze[r][c] = { type: 'wall', isBreakable: false, hasWord: false, wordData: null };
+                }
+            }
+
+            // 使用改进的DFS生成迷宫路径（步长为1）
+            const visited = [];
+            for (let r = 0; r < ROWS; r++) {
+                visited[r] = [];
+                for (let c = 0; c < COLS; c++) {
+                    visited[r][c] = false;
+                }
+            }
+
+            // 从起点开始DFS，步长为1
+            function dfs(row, col) {
+                visited[row][col] = true;
+                maze[row][col].type = 'path';
+
+                // 随机打乱方向（步长为1）
+                const directions = [
+                    [-1, 0], [1, 0], [0, -1], [0, 1]
+                ];
+                shuffleArray(directions);
+
+                for (const [dr, dc] of directions) {
+                    const newRow = row + dr;
+                    const newCol = col + dc;
+
+                    if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS && !visited[newRow][newCol]) {
+                        // 随机决定是否挖通这个方向（控制迷宫密度）
+                        if (Math.random() > 0.3) {
+                            dfs(newRow, newCol);
+                        }
+                    }
+                }
+            }
+
+            // 从起点开始
+            dfs(0, 0);
+
+            // 确保终点可达 - 使用BFS检查并修复
+            ensurePathToEnd(maze);
+
+            // 添加更多路径让迷宫更有趣
+            addExtraPaths(maze);
+
+            // 标记起点和终点
+            maze[0][0].type = 'start';
+            maze[ROWS - 1][COLS - 1].type = 'end';
+
+            // 添加一些可破坏的墙
+            addBreakableWalls(maze);
+
+            return maze;
+        }
+
+        function ensurePathToEnd(maze) {
+            // 使用BFS检查从起点到终点是否可达
+            const visited = [];
+            for (let r = 0; r < ROWS; r++) {
+                visited[r] = [];
+                for (let c = 0; c < COLS; c++) {
+                    visited[r][c] = false;
+                }
+            }
+
+            const queue = [[0, 0]];
+            visited[0][0] = true;
+            const parent = {};
+            parent['0,0'] = null;
+
+            while (queue.length > 0) {
+                const [row, col] = queue.shift();
+
+                if (row === ROWS - 1 && col === COLS - 1) {
+                    // 找到路径
+                    return;
+                }
+
+                const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+                for (const [dr, dc] of directions) {
+                    const newRow = row + dr;
+                    const newCol = col + dc;
+
+                    if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS &&
+                        !visited[newRow][newCol] && maze[newRow][newCol].type !== 'wall') {
+                        visited[newRow][newCol] = true;
+                        parent[`${newRow},${newCol}`] = [row, col];
+                        queue.push([newRow, newCol]);
+                    }
+                }
+            }
+
+            // 如果没有路径，强制打通一条
+            let row = ROWS - 1;
+            let col = COLS - 1;
+
+            while (row > 0 || col > 0) {
+                maze[row][col].type = 'path';
+
+                // 随机选择向上或向左
+                if (row > 0 && col > 0) {
+                    if (Math.random() > 0.5) {
+                        row--;
+                    } else {
+                        col--;
+                    }
+                } else if (row > 0) {
+                    row--;
+                } else {
+                    col--;
+                }
+            }
+        }
+
+        function addExtraPaths(maze) {
+            // 随机添加一些额外的路径，让迷宫更有趣
+            for (let r = 1; r < ROWS - 1; r++) {
+                for (let c = 1; c < COLS - 1; c++) {
+                    if (maze[r][c].type === 'wall') {
+                        // 检查周围是否有路径
+                        const neighbors = [
+                            [r-1, c], [r+1, c], [r, c-1], [r, c+1]
+                        ];
+                        let pathCount = 0;
+                        for (const [nr, nc] of neighbors) {
+                            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS &&
+                                maze[nr][nc].type !== 'wall') {
+                                pathCount++;
+                            }
+                        }
+
+                        // 如果周围有2个以上的路径，有一定概率打通
+                        if (pathCount >= 2 && Math.random() > 0.7) {
+                            maze[r][c].type = 'path';
+                        }
+                    }
+                }
+            }
+        }
+
+        function addBreakableWalls(maze) {
+            gameState.breakableWalls = [];
+            let breakableCount = 0;
+            const maxBreakable = 8;
+
+            // 寻找可以设置为可破坏的墙
+            for (let r = 1; r < ROWS - 1; r++) {
+                for (let c = 1; c < COLS - 1; c++) {
+                    if (maze[r][c].type === 'wall' && breakableCount < maxBreakable) {
+                        // 检查这个墙两边是否有路径
+                        const hasPathNearby =
+                            (r > 0 && maze[r-1][c].type === 'path') ||
+                            (r < ROWS-1 && maze[r+1][c].type === 'path') ||
+                            (c > 0 && maze[r][c-1].type === 'path') ||
+                            (c < COLS-1 && maze[r][c+1].type === 'path');
+
+                        if (hasPathNearby && Math.random() > 0.6) {
+                            maze[r][c].isBreakable = true;
+                            gameState.breakableWalls.push({ row: r, col: c });
+                            breakableCount++;
+                        }
+                    }
+                }
+            }
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // ============ 放置单词 ============
+        function placeWords(maze) {
+            const words = wordDatabase[gameState.currentGrade];
+            const selectedWords = [];
+            const usedIndices = new Set();
+
+            // 随机选择5个单词
+            while (selectedWords.length < WORD_COUNT && usedIndices.size < words.length) {
+                const idx = Math.floor(Math.random() * words.length);
+                if (!usedIndices.has(idx)) {
+                    usedIndices.add(idx);
+                    selectedWords.push({ ...words[idx] });
+                }
+            }
+
+            // 找到所有可以放置单词的路径格子（排除起点和终点）
+            const pathCells = [];
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (maze[r][c].type === 'path') {
+                        // 不在起点附近
+                        if (!(r < 2 && c < 2)) {
+                            // 不在终点附近
+                            if (!(r > ROWS - 3 && c > COLS - 3)) {
+                                pathCells.push({ row: r, col: c });
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 随机选择位置放置单词
+            shuffleArray(pathCells);
+
+            gameState.words = [];
+            for (let i = 0; i < Math.min(WORD_COUNT, pathCells.length, selectedWords.length); i++) {
+                const cell = pathCells[i];
+                maze[cell.row][cell.col].hasWord = true;
+                maze[cell.row][cell.col].wordData = selectedWords[i];
+                gameState.words.push({
+                    row: cell.row,
+                    col: cell.col,
+                    data: selectedWords[i],
+                    collected: false
+                });
+            }
+        }
+
+        // ============ 渲染迷宫 ============
+        function renderMaze() {
+            const grid = document.getElementById('mazeGrid');
+            grid.innerHTML = '';
+
+            // 计算格子大小
+            const containerWidth = Math.min(370, window.innerWidth - 30);
+            const cellSize = Math.floor((containerWidth - 10) / COLS);
+
+            grid.style.gridTemplateColumns = `repeat(${COLS}, ${cellSize}px)`;
+            grid.style.gridTemplateRows = `repeat(${ROWS}, ${cellSize}px)`;
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'maze-cell';
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+
+                    const cellData = gameState.maze[r][c];
+
+                    if (cellData.type === 'start') {
+                        cell.classList.add('start');
+                    } else if (cellData.type === 'end') {
+                        cell.classList.add('end');
+                    } else if (cellData.type === 'wall') {
+                        cell.classList.add('wall');
+                        if (cellData.isBreakable) {
+                            cell.classList.add('breakable');
+                            cell.onclick = () => tryBreakWall(r, c);
+                        }
+                    } else {
+                        cell.classList.add('path');
+                    }
+
+                    // 添加单词
+                    if (cellData.hasWord && !gameState.words.find(w => w.row === r && w.col === c)?.collected) {
+                        const wordItem = document.createElement('div');
+                        wordItem.className = 'word-item';
+                        wordItem.textContent = cellData.wordData.word;
+                        wordItem.id = `word-${r}-${c}`;
+                        cell.appendChild(wordItem);
+                    }
+
+                    grid.appendChild(cell);
+                }
+            }
+
+            // 添加玩家
+            addPlayer();
+        }
+
+        // 存储事件处理器引用，避免重复绑定
+        let dragHandlers = null;
+
+        function addPlayer() {
+            const grid = document.getElementById('mazeGrid');
+            let player = document.getElementById('player');
+
+            // 移除旧的事件监听器
+            if (dragHandlers) {
+                document.removeEventListener('touchmove', dragHandlers.handleMove);
+                document.removeEventListener('touchend', dragHandlers.handleEnd);
+                document.removeEventListener('mousemove', dragHandlers.handleMove);
+                document.removeEventListener('mouseup', dragHandlers.handleEnd);
+            }
+
+            if (!player) {
+                player = document.createElement('div');
+                player.id = 'player';
+                player.className = 'player';
+                player.textContent = '👦';
+                grid.appendChild(player);
+            }
+
+            updatePlayerPosition();
+            setupDragControls(player);
+        }
+
+        function updatePlayerPosition() {
+            const player = document.getElementById('player');
+            const grid = document.getElementById('mazeGrid');
+
+            if (!player || !grid) return;
+
+            const cells = grid.querySelectorAll('.maze-cell');
+            const cellSize = cells[0]?.offsetWidth || 40;
+
+            const x = gameState.playerPos.col * (cellSize + 2) + cellSize / 2 - 12;
+            const y = gameState.playerPos.row * (cellSize + 2) + cellSize / 2 - 12;
+
+            player.style.left = `${x}px`;
+            player.style.top = `${y}px`;
+        }
+
+        // ============ 拖拽控制 ============
+        function setupDragControls(player) {
+            let startX, startY;
+            let lastValidPos = { ...gameState.playerPos };
+
+            const handleStart = (e) => {
+                if (gameState.isPaused || gameState.isGameOver) return;
+
+                e.preventDefault();
+                gameState.isDragging = true;
+
+                const touch = e.touches ? e.touches[0] : e;
+                startX = touch.clientX;
+                startY = touch.clientY;
+                lastValidPos = { ...gameState.playerPos };
+
+                player.style.animation = 'none';
+                player.style.transform = 'scale(1.2)';
+            };
+
+            const handleMove = (e) => {
+                if (!gameState.isDragging || gameState.isPaused || gameState.isGameOver) return;
+
+                e.preventDefault();
+                const touch = e.touches ? e.touches[0] : e;
+
+                const dx = touch.clientX - startX;
+                const dy = touch.clientY - startY;
+
+                const grid = document.getElementById('mazeGrid');
+                const cells = grid.querySelectorAll('.maze-cell');
+                const cellSize = cells[0]?.offsetWidth || 40;
+                const threshold = cellSize / 2;
+
+                let newRow = lastValidPos.row;
+                let newCol = lastValidPos.col;
+
+                // 判断移动方向
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    if (dx > threshold) newCol = lastValidPos.col + 1;
+                    else if (dx < -threshold) newCol = lastValidPos.col - 1;
+                } else {
+                    if (dy > threshold) newRow = lastValidPos.row + 1;
+                    else if (dy < -threshold) newRow = lastValidPos.row - 1;
+                }
+
+                // 检查是否可以移动（只能移动一格）
+                if ((newRow !== lastValidPos.row || newCol !== lastValidPos.col) && canMoveTo(newRow, newCol)) {
+                    gameState.playerPos = { row: newRow, col: newCol };
+                    updatePlayerPosition();
+
+                    // 检查是否收集到单词
+                    checkWordCollection();
+
+                    // 检查是否到达终点
+                    checkWinCondition();
+
+                    // 重置拖拽起点
+                    startX = touch.clientX;
+                    startY = touch.clientY;
+                    lastValidPos = { ...gameState.playerPos };
+                }
+            };
+
+            const handleEnd = () => {
+                gameState.isDragging = false;
+                player.style.transform = 'scale(1)';
+                player.style.animation = 'playerBounce 1s ease-in-out infinite';
+            };
+
+            // 保存事件处理器引用
+            dragHandlers = { handleMove, handleEnd };
+
+            // 触摸事件
+            player.addEventListener('touchstart', handleStart, { passive: false });
+            document.addEventListener('touchmove', handleMove, { passive: false });
+            document.addEventListener('touchend', handleEnd);
+
+            // 鼠标事件
+            player.addEventListener('mousedown', handleStart);
+            document.addEventListener('mousemove', handleMove);
+            document.addEventListener('mouseup', handleEnd);
+        }
+
+        function canMoveTo(row, col) {
+            if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return false;
+
+            const cell = gameState.maze[row][col];
+            // 只有非墙壁才能移动（path, start, end）
+            return cell.type !== 'wall';
+        }
+
+        // ============ 单词收集 ============
+        function checkWordCollection() {
+            const { row, col } = gameState.playerPos;
+
+            const wordIdx = gameState.words.findIndex(w =>
+                w.row === row && w.col === col && !w.collected
+            );
+
+            if (wordIdx !== -1) {
+                const word = gameState.words[wordIdx];
+                word.collected = true;
+                gameState.collectedWords.push(word.data);
+                gameState.breakCount++;
+
+                // 动画效果
+                const wordElement = document.getElementById(`word-${row}-${col}`);
+                if (wordElement) {
+                    wordElement.classList.add('collecting');
+                    setTimeout(() => wordElement.remove(), 300);
+                }
+
+                // 更新UI
+                updateGameInfo();
+
+                // 显示单词弹窗
+                showWordPopup(word.data);
+
+                // TTS朗读
+                if (gameState.soundEnabled) {
+                    speakWord(word.data);
+                }
+            }
+        }
+
+        function showWordPopup(wordData) {
+            // 暂停游戏
+            clearInterval(gameState.timer);
+
+            document.getElementById('popupWord').textContent = wordData.word;
+            document.getElementById('popupChinese').textContent = wordData.chinese;
+            document.getElementById('popupExample').textContent = wordData.example;
+
+            document.getElementById('wordOverlay').classList.add('active');
+            document.getElementById('wordPopup').classList.add('active');
+        }
+
+        function closeWordPopup() {
+            document.getElementById('wordOverlay').classList.remove('active');
+            document.getElementById('wordPopup').classList.remove('active');
+
+            // 继续游戏
+            if (!gameState.isPaused && !gameState.isGameOver) {
+                startTimer();
+            }
+        }
+
+        // ============ 破墙功能 ============
+        function tryBreakWall(row, col) {
+            if (gameState.breakCount <= 0) {
+                // 没有可用的破墙次数
+                showToast('💡 请先收集单词获得破墙能力！');
+                return;
+            }
+
+            const cell = gameState.maze[row][col];
+            if (!cell.isBreakable) return;
+
+            // 检查玩家是否在墙壁旁边
+            const playerPos = gameState.playerPos;
+            const isAdjacent =
+                (Math.abs(playerPos.row - row) === 1 && playerPos.col === col) ||
+                (Math.abs(playerPos.col - col) === 1 && playerPos.row === row);
+
+            if (!isAdjacent) {
+                showToast('👆 请移动到墙壁旁边再破墙！');
+                return;
+            }
+
+            // 破墙
+            cell.type = 'path';
+            cell.isBreakable = false;
+            gameState.breakCount--;
+            gameState.wallsBroken++;
+
+            // 动画效果
+            const cellElement = document.querySelector(`.maze-cell[data-row="${row}"][data-col="${col}"]`);
+            if (cellElement) {
+                cellElement.classList.add('breaking');
+                setTimeout(() => {
+                    cellElement.classList.remove('wall', 'breakable', 'breaking');
+                    cellElement.classList.add('path');
+                    cellElement.onclick = null;
+                }, 500);
+            }
+
+            updateGameInfo();
+        }
+
+        // ============ TTS朗读 ============
+        function speakWord(wordData) {
+            if (!gameState.soundEnabled) return;
+
+            // 取消之前的朗读
+            speechSynthesis.cancel();
+
+            // 朗读英文单词
+            const wordUtterance = new SpeechSynthesisUtterance(wordData.word);
+            wordUtterance.lang = 'en-US';
+            wordUtterance.rate = 0.9;
+
+            wordUtterance.onend = () => {
+                // 朗读中文
+                setTimeout(() => {
+                    const chineseUtterance = new SpeechSynthesisUtterance(wordData.chinese);
+                    chineseUtterance.lang = 'zh-CN';
+                    chineseUtterance.rate = 0.9;
+                    speechSynthesis.speak(chineseUtterance);
+                }, 300);
+            };
+
+            speechSynthesis.speak(wordUtterance);
+        }
+
+        function speakWordOnly(word) {
+            if (!gameState.soundEnabled) return;
+
+            speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(word);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.9;
+            speechSynthesis.speak(utterance);
+        }
+
+        // ============ 游戏逻辑 ============
+        function updateGameInfo() {
+            document.getElementById('wordCount').textContent =
+                `${gameState.collectedWords.length}/${WORD_COUNT}`;
+            document.getElementById('breakCount').textContent = gameState.breakCount;
+        }
+
+        function startTimer() {
+            // 先清除旧计时器，防止多个计时器同时运行
+            if (gameState.timer) {
+                clearInterval(gameState.timer);
+            }
+
+            gameState.timer = setInterval(() => {
+                if (gameState.isPaused || gameState.isGameOver) return;
+
+                gameState.timeLeft--;
+                updateTimerDisplay();
+
+                if (gameState.timeLeft <= 0) {
+                    gameOver(false);
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(gameState.timeLeft / 60);
+            const seconds = gameState.timeLeft % 60;
+            const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('timeDisplay').textContent = display;
+
+            const timerElement = document.getElementById('timerDisplay');
+            if (gameState.timeLeft <= 10) {
+                timerElement.classList.add('warning');
+            } else {
+                timerElement.classList.remove('warning');
+            }
+        }
+
+        function checkWinCondition() {
+            const { row, col } = gameState.playerPos;
+            if (row === ROWS - 1 && col === COLS - 1) {
+                gameOver(true);
+            }
+        }
+
+        function gameOver(isVictory) {
+            gameState.isGameOver = true;
+            clearInterval(gameState.timer);
+
+            // 计算错过的单词
+            gameState.missedWords = gameState.words
+                .filter(w => !w.collected)
+                .map(w => w.data);
+
+            // 计算得分
+            const timeBonus = gameState.timeLeft * 2;
+            const wordBonus = gameState.collectedWords.length * 20;
+            const wallBonus = gameState.wallsBroken * 10;
+            const victoryBonus = isVictory ? 50 : 0;
+            const totalScore = timeBonus + wordBonus + wallBonus + victoryBonus;
+
+            // 更新结束页面
+            const gameOverScreen = document.getElementById('gameOverScreen');
+            gameOverScreen.classList.remove('victory', 'defeat');
+            gameOverScreen.classList.add(isVictory ? 'victory' : 'defeat');
+
+            document.getElementById('resultIcons').textContent = isVictory ? '🎉🏆🎉' : '😢💔😢';
+            document.getElementById('resultTitle').textContent = isVictory ? '恭喜通关！' : '时间到！';
+            document.getElementById('resultSubtitle').textContent = isVictory
+                ? '你成功走出了迷宫'
+                : '再接再厉，下次一定能成功！';
+
+            const timeUsed = 60 - gameState.timeLeft;
+            document.getElementById('statTime').textContent =
+                `${Math.floor(timeUsed / 60).toString().padStart(2, '0')}:${(timeUsed % 60).toString().padStart(2, '0')}`;
+            document.getElementById('statWords').textContent = gameState.collectedWords.length;
+            document.getElementById('statWalls').textContent = gameState.wallsBroken;
+            document.getElementById('statScore').textContent = totalScore;
+
+            // 渲染单词回顾
+            renderWordReview();
+
+            switchScreen('gameOverScreen');
+        }
+
+        function renderWordReview() {
+            // 收集的单词
+            const correctList = document.getElementById('correctWordsList');
+            correctList.innerHTML = '';
+            document.getElementById('correctTitle').textContent =
+                `✅ 收集的单词 (${gameState.collectedWords.length}个)`;
+
+            gameState.collectedWords.forEach(word => {
+                const item = document.createElement('div');
+                item.className = 'review-word-item correct';
+                item.innerHTML = `
+                    <div>
+                        <div class="word-en">${word.word}</div>
+                        <div class="word-cn">${word.chinese}</div>
+                    </div>
+                    <button class="word-speak-btn" onclick="speakWordOnly('${word.word}')">🔊</button>
+                `;
+                correctList.appendChild(item);
+            });
+
+            // 错过的单词
+            const missedList = document.getElementById('missedWordsList');
+            missedList.innerHTML = '';
+            document.getElementById('missedTitle').textContent =
+                `❌ 错过的单词 (${gameState.missedWords.length}个)`;
+
+            if (gameState.missedWords.length === 0) {
+                missedList.innerHTML = '<div style="text-align: center; color: #999; padding: 10px;">🎉 全部收集！太棒了！</div>';
+            } else {
+                gameState.missedWords.forEach(word => {
+                    const item = document.createElement('div');
+                    item.className = 'review-word-item wrong';
+                    item.innerHTML = `
+                        <div>
+                            <div class="word-en">${word.word}</div>
+                            <div class="word-cn">${word.chinese}</div>
+                        </div>
+                        <button class="word-speak-btn" onclick="speakWordOnly('${word.word}')">🔊</button>
+                    `;
+                    missedList.appendChild(item);
+                });
+            }
+        }
+
+        // ============ 游戏控制 ============
+        function startGame() {
+            // 重置游戏状态
+            gameState = {
+                currentGrade: parseInt(document.getElementById('gradeSelect').value),
+                maze: [],
+                playerPos: { row: 0, col: 0 },
+                endPos: { row: ROWS - 1, col: COLS - 1 },
+                words: [],
+                collectedWords: [],
+                missedWords: [],
+                breakableWalls: [],
+                breakCount: 0,
+                wallsBroken: 0,
+                timeLeft: 60,
+                timer: null,
+                isPaused: false,
+                isGameOver: false,
+                soundEnabled: gameState.soundEnabled,
+                isDragging: false,
+                startTime: Date.now()
+            };
+
+            // 生成迷宫
+            gameState.maze = generateMaze();
+
+            // 放置单词
+            placeWords(gameState.maze);
+
+            // 渲染迷宫
+            renderMaze();
+
+            // 更新UI
+            updateGameInfo();
+            updateTimerDisplay();
+
+            // 重置暂停按钮
+            document.getElementById('pauseBtn').textContent = '⏸️';
+
+            // 切换到游戏页面
+            switchScreen('gameScreen');
+
+            // 开始计时
+            startTimer();
+        }
+
+        function restartGame() {
+            stopGame();
+            document.getElementById('pauseModal').classList.remove('active');
+            startGame();
+        }
+
+        function stopGame() {
+            clearInterval(gameState.timer);
+            gameState.timer = null;
+            gameState.isGameOver = true;
+            speechSynthesis.cancel();
+        }
+
+        // ============ 窗口大小调整 ============
+        window.addEventListener('resize', () => {
+            if (document.getElementById('gameScreen').classList.contains('active')) {
+                renderMaze();
+            }
+        });
+
+        // 阻止页面滚动
+        document.addEventListener('touchmove', (e) => {
+            if (document.getElementById('gameScreen').classList.contains('active')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 预加载语音
+            if ('speechSynthesis' in window) {
+                speechSynthesis.getVoices();
+            }
+        });
+    </script>
+</body>
+</html>
